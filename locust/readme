@@ -1,0 +1,49 @@
+locust 教程
+==========================================================================================
+'''
+    使用locust 完成性能测试
+        1.启动命令：
+            cmd：locust -f locust_files/my_locust_file.py --host=http://example.com
+'''
+from locust import HttpLocust, TaskSet, task,TaskSequence
+
+class UserBehavior(TaskSet):
+    '''线程组'''
+    def on_start(self):
+        """ on_start is called when a Locust start before any task is scheduled """
+        self.login()
+
+    def on_stop(self):
+        """ on_stop is called when the TaskSet is stopping """
+        self.logout()
+
+    def login(self):
+        self.client.post("/login", {"username":"ellen_key", "password":"education"})
+
+    def logout(self):
+        self.client.post("/logout", {"username":"ellen_key", "password":"education"})
+
+    @seq_task(1)        # 任务执行顺序装饰器，设置事务执行顺序
+    @task(2)            # 任务装饰器，参数为运行次数的比例
+    def index(self):
+        '''事务1'''
+        self.client.get("/")
+
+    @seq_task(2)
+    @task(1)
+    def profile(self):
+        '''事务2'''
+        self.client.get("/profile")
+
+class WebsiteUser(HttpLocust):
+    task_set = UserBehavior     # 指定执行线程组
+    min_wait = 5000             # 最小等待时间，单位毫秒
+    max_wait = 9000             # 最大等待时间，单位毫秒
+
+==========================================================================================
+no web 启动模式：
+    cmd：locust -f load_test.py --host=https://www.baidu.com --no-web -c 10 -r 2 -t 1m
+        –no-web 表示不使用Web界面运行测试。
+        -c 设置虚拟用户数。
+        -r 设置每秒启动虚拟用户数。
+        -t 设置设置运行时间。
